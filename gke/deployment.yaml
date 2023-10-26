@@ -21,6 +21,16 @@ spec:
             cpu: "500m"
         ports:
         - containerPort: 4000
+        livenessProbe:
+          httpGet:
+            path: /.well-known/apollo/server-health
+            port: 4000
+            scheme: HTTP
+          initialDelaySeconds: 10
+          timeoutSeconds: 20
+          periodSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
         env:
           - name: JWT_SECRET
             valueFrom:
