@@ -7,11 +7,12 @@ import {
 import { startStandaloneServer } from "@apollo/server/standalone";
 import { verifyJwtToken } from "./libs/auth";
 import { config } from "./config";
+
 const gateway = new ApolloGateway({
   supergraphSdl: new IntrospectAndCompose({
     subgraphs: [
-      { name: "user", url: config.userServiceUrl },
-      { name: "post", url: config.postServiceUrl },
+      { name: "user", url: config.USER_SERVICE_URL || "http://users-svc:4000" },
+      { name: "post", url: config.POST_SERVICE_URL || "http://posts-svc:4000" },
     ],
   }),
   buildService({ url }) {
@@ -25,7 +26,9 @@ const gateway = new ApolloGateway({
             const decoded = verifyJwtToken(token);
             request?.http?.headers.set("user-id", decoded.id);
           }
-        } catch (err) {}
+        } catch (err) {
+          console.log("No jwt token found");
+        }
       },
     });
   },
@@ -37,7 +40,7 @@ const server = new ApolloServer({
 
 (async () => {
   const { url } = await startStandaloneServer(server, {
-    listen: { port: 4002 },
+    listen: { port: config.PORT || 4000 },
     context: async ({ req }) => {
       const token = req.headers.authorization;
       return { token };

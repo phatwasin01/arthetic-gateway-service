@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { config } from "../config";
 
-const jwtSecret = config.jwtSecret;
+const jwtSecret = config.JWT_SECRET || "secret";
 
 //extend jwt.Payload type
 interface JwtDecoded extends jwt.JwtPayload {
