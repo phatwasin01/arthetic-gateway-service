@@ -23,7 +23,7 @@ spec:
         - containerPort: 4000
         livenessProbe:
           httpGet:
-            path: /.well-known/apollo/server-health
+            path: /graphql?query=%7B__typename%7D
             port: 4000
             scheme: HTTP
           initialDelaySeconds: 10
