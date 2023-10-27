@@ -11,6 +11,9 @@ spec:
       labels:
         app: gateway-app
     spec:
+      replicas: 1
+      strategy:
+        type: Recreate
       containers:
       - name: gateway-app
         image: asia-southeast1-docker.pkg.dev/arthetic/arthetic-images/gateway-svc:latest
