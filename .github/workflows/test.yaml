@@ -48,4 +48,3 @@ jobs:
           kubectl apply -f gke/deployment.yaml
           kubectl apply -f gke/service.yaml
           kubectl apply -f gke/ingress.yaml
-          kubectl rollout restart deployment/gateway-app
