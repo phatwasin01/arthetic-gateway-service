@@ -4,7 +4,6 @@ import {
   IntrospectAndCompose,
   RemoteGraphQLDataSource,
 } from "@apollo/gateway";
-// import { startStandaloneServer } from "@apollo/server/standalone";
 import { verifyJwtToken } from "./libs/auth";
 import { config } from "./config";
 
@@ -46,7 +45,7 @@ const gateway = new ApolloGateway({
 
 const server = new ApolloServer({
   gateway,
-  nodeEnv: "development",
+  nodeEnv: config.NODE_ENV || "development",
   plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
 });
 (async () => {
@@ -65,19 +64,11 @@ const server = new ApolloServer({
   app.get("/health", (req, res) => {
     res.send("ok");
   });
+  app.get("/healthz", (req, res) => {
+    res.send("ok");
+  });
   await new Promise<void>((resolve) =>
     httpServer.listen({ port: config.PORT }, resolve)
   );
   console.log(`🚀  Server ready at: ${config.PORT}`);
 })();
-
-// (async () => {
-//   const { url } = await startStandaloneServer(server, {
-//     listen: { port: config.PORT || 4000 },
-//     context: async ({ req }) => {
-//       const token = req.headers.authorization;
-//       return { token };
-//     },
-//   });
-//   console.log(`🚀  Server ready at: ${url}`);
-// })();

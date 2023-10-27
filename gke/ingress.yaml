@@ -5,20 +5,22 @@ metadata:
   name: arthetic-ingress
   annotations:
     kubernetes.io/ingress.class: "gce"
-    kubernetes.io/ingress.allow-http: "true"
+    kubernetes.io/ingress.global-static-ip-name: "arthetic-app-ip"
+    ingress.gcp.kubernetes.io/pre-shared-cert: "arthetic-app-ingress-cer"
 spec:
   defaultBackend:
     service:
-      name: nginx-service
+      name: gateway-svc
       port:
         number: 80
   rules:
-  - http:
-      paths:
-      - path: /*
-        pathType: ImplementationSpecific
-        backend:
-          service:
-            name: gateway-svc
-            port:
-              number: 80
+    - host: www.arthetic.live
+      http:
+        paths:
+          - path: /*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: gateway-svc
+                port:
+                  number: 80

@@ -11,5 +11,3 @@ export const verifyJwtToken = (token: string): JwtDecoded => {
   const decoded = jwt.verify(token, jwtSecret);
   return decoded as JwtDecoded;
 };
-
-// transform

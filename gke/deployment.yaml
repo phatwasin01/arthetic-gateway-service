@@ -17,7 +17,7 @@ spec:
         imagePullPolicy: Always
         resources:
           limits:
-            memory: "128Mi"
+            memory: "512Mi"
             cpu: "500m"
         ports:
         - containerPort: 4000
@@ -26,7 +26,7 @@ spec:
             path: /
             port: 4000
             scheme: HTTP
-          initialDelaySeconds: 10
+          initialDelaySeconds: 15
           timeoutSeconds: 10
           periodSeconds: 5
           successThreshold: 1
