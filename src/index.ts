@@ -4,9 +4,19 @@ import {
   IntrospectAndCompose,
   RemoteGraphQLDataSource,
 } from "@apollo/gateway";
-import { startStandaloneServer } from "@apollo/server/standalone";
+// import { startStandaloneServer } from "@apollo/server/standalone";
 import { verifyJwtToken } from "./libs/auth";
 import { config } from "./config";
+
+import { expressMiddleware } from "@apollo/server/express4";
+import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
+import express from "express";
+import http from "http";
+import cors from "cors";
+
+const app = express();
+
+const httpServer = http.createServer(app);
 
 const gateway = new ApolloGateway({
   supergraphSdl: new IntrospectAndCompose({
@@ -37,16 +47,37 @@ const gateway = new ApolloGateway({
 const server = new ApolloServer({
   gateway,
   nodeEnv: "development",
-  csrfPrevention: false,
+  plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
 });
-
 (async () => {
-  const { url } = await startStandaloneServer(server, {
-    listen: { port: config.PORT || 4000 },
-    context: async ({ req }) => {
-      const token = req.headers.authorization;
-      return { token };
-    },
+  await server.start();
+  app.use(
+    "/graphql",
+    cors<cors.CorsRequest>({ origin: "*" }),
+    express.json(),
+    expressMiddleware(server, {
+      context: async ({ req }) => ({ token: req.headers.authorization }),
+    })
+  );
+  app.get("/", (req, res) => {
+    res.send("hello world");
   });
-  console.log(`🚀  Server ready at: ${url}`);
+  app.get("/health", (req, res) => {
+    res.send("ok");
+  });
+  await new Promise<void>((resolve) =>
+    httpServer.listen({ port: config.PORT }, resolve)
+  );
+  console.log(`🚀  Server ready at: ${config.PORT}`);
 })();
+
+// (async () => {
+//   const { url } = await startStandaloneServer(server, {
+//     listen: { port: config.PORT || 4000 },
+//     context: async ({ req }) => {
+//       const token = req.headers.authorization;
+//       return { token };
+//     },
+//   });
+//   console.log(`🚀  Server ready at: ${url}`);
+// })();
