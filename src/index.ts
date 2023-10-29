@@ -45,7 +45,7 @@ const gateway = new ApolloGateway({
 
 const server = new ApolloServer({
   gateway,
-  nodeEnv: config.NODE_ENV || "development",
+  nodeEnv: "development",
   plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
 });
 (async () => {
