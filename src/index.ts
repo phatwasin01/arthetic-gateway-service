@@ -22,6 +22,10 @@ const gateway = new ApolloGateway({
     subgraphs: [
       { name: "user", url: config.USER_SERVICE_URL || "http://users-svc:4000" },
       { name: "post", url: config.POST_SERVICE_URL || "http://posts-svc:4000" },
+      {
+        name: "market",
+        url: config.MARKET_SERVICE_URL || "http://market-svc:4000",
+      },
     ],
   }),
   buildService({ url }) {
