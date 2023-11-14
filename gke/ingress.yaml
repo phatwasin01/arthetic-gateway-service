@@ -13,14 +13,14 @@ spec:
       name: gateway-svc
       port:
         number: 80
-  rules:
-    - host: www.arthetic.live
-      http:
-        paths:
-          - path: /*
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: gateway-svc
-                port:
-                  number: 80
+  # rules:
+  #   - host: www.arthetic.live
+  #     http:
+  #       paths:
+  #         - path: /*
+  #           pathType: ImplementationSpecific
+  #           backend:
+  #             service:
+  #               name: gateway-svc
+  #               port:
+  #                 number: 80
