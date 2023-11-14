@@ -17,7 +17,7 @@ spec:
     - host: www.arthetic.live
       http:
         paths:
-          - path: /api/*
+          - path: /*
             pathType: ImplementationSpecific
             backend:
               service:
