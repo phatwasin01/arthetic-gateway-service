@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-app
+spec:
+  selector:
+    matchLabels:
+      app: gateway-app
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: gateway-app
+    spec:
+      containers:
+      - name: gateway-app
+        image: asia-southeast1-docker.pkg.dev/arthetic/arthetic-images/gateway-svc:latest
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "0.5Gi"
+          limits:
+            cpu: "250m"
+            memory: "0.5Gi"
+
+        ports:
+        - containerPort: 4000
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 4000
+            scheme: HTTP
+          initialDelaySeconds: 15
+          timeoutSeconds: 10
+          periodSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        env:
+          - name: JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: users-secret
+                key: jwt_secret
+          - name: PORT
+            value: "4000"

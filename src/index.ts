@@ -4,44 +4,153 @@ import {
   IntrospectAndCompose,
   RemoteGraphQLDataSource,
 } from "@apollo/gateway";
-import { startStandaloneServer } from "@apollo/server/standalone";
 import { verifyJwtToken } from "./libs/auth";
 import { config } from "./config";
+import { expressMiddleware } from "@apollo/server/express4";
+import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
+import express from "express";
+import http from "http";
+import cors from "cors";
+import winston from "winston";
+const myFormat = winston.format.printf(
+  ({ level, message, label, timestamp }) => {
+    return `${timestamp} [${label}] ${level}: ${message}`;
+  }
+);
+// Configure the Winston logger
+const logger = winston.createLogger({
+  level: "info",
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.colorize(),
+    myFormat
+  ),
+});
+
+// Add Console transport if not in production
+if (process.env.NODE_ENV !== "production") {
+  logger.add(
+    new winston.transports.Console({
+      format: winston.format.simple(),
+    })
+  );
+}
+
+// Initialize Express
+const app = express();
+
+// Create HTTP server
+const httpServer = http.createServer(app);
+
+// Apollo Gateway setup
 const gateway = new ApolloGateway({
   supergraphSdl: new IntrospectAndCompose({
     subgraphs: [
-      { name: "user", url: config.userServiceUrl },
-      { name: "post", url: config.postServiceUrl },
+      { name: "user", url: config.USER_SERVICE_URL || "http://users-svc:4000" },
+      { name: "post", url: config.POST_SERVICE_URL || "http://posts-svc:4000" },
+      {
+        name: "market",
+        url: config.MARKET_SERVICE_URL || "http://market-svc:4000",
+      },
     ],
   }),
   buildService({ url }) {
     return new RemoteGraphQLDataSource({
       url,
       willSendRequest({ request, context }) {
-        // the request variable is to sent to subgraphs
         const { token } = context;
         try {
           if (token && typeof token === "string") {
             const decoded = verifyJwtToken(token);
             request?.http?.headers.set("user-id", decoded.id);
           }
-        } catch (err) {}
+        } catch (err) {
+          logger.warn("No valid token found");
+        }
       },
     });
   },
 });
 
+// Apollo Server setup
 const server = new ApolloServer({
   gateway,
+  nodeEnv: "development",
+  plugins: [
+    ApolloServerPluginDrainHttpServer({ httpServer }),
+    {
+      async serverWillStart() {
+        logger.info("Server starting up!");
+      },
+      async requestDidStart() {
+        // logger.info("Request started! Query");
+
+        return {
+          // Fires whenever Apollo Server will parse a GraphQL
+          // request to create its associated document AST.
+          async parsingDidStart() {
+            logger.info("Parsing started!");
+          },
+
+          // Fires whenever Apollo Server will validate a
+          // request's document AST against your GraphQL schema.
+          async validationDidStart() {
+            logger.info("Validation started!");
+          },
+        };
+      },
+    },
+  ],
 });
 
+// Start the server
 (async () => {
-  const { url } = await startStandaloneServer(server, {
-    listen: { port: 4002 },
-    context: async ({ req }) => {
-      const token = req.headers.authorization;
-      return { token };
-    },
+  await server.start();
+  app.use(cors<cors.CorsRequest>({ origin: "*" }));
+  app.use(express.json());
+  app.use(
+    "/graphql",
+    expressMiddleware(server, {
+      context: async ({ req }) => ({ token: req.headers.authorization }),
+    })
+  );
+
+  app.get("/", (req, res) => {
+    res.send("hello world");
   });
-  console.log(`🚀  Server ready at: ${url}`);
+
+  app.get("/check-auth", (req, res) => {
+    const token = req.headers.authorization;
+
+    if (!token) {
+      res.status(401).send({ message: "No token provided" });
+      return;
+    }
+
+    try {
+      const decoded = verifyJwtToken(token);
+      if (decoded) {
+        res.status(200).send({ message: "Authenticated", user: decoded });
+      } else {
+        res.status(401).send({ message: "Invalid token" });
+      }
+    } catch (err) {
+      logger.warn("Token verification failed");
+      res.status(401).send({ message: "Token verification failed" });
+    }
+  });
+
+  app.get("/health", (req, res) => {
+    res.send("ok");
+  });
+
+  app.get("/healthz", (req, res) => {
+    res.send("ok");
+  });
+
+  await new Promise<void>((resolve) =>
+    httpServer.listen({ port: config.PORT }, resolve)
+  );
+
+  logger.info(`🚀 Server ready at http://localhost:${config.PORT}/graphql`);
 })();
