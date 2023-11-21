@@ -52,7 +52,6 @@ const gateway = new ApolloGateway({
         name: "market",
         url: config.MARKET_SERVICE_URL || "http://market-svc:4000",
       },
-      // { name: "chat", url: config.CHAT_SERVICE_URL || "http://chat-svc:4000" },
     ],
   }),
   buildService({ url }) {
@@ -118,6 +117,27 @@ const server = new ApolloServer({
 
   app.get("/", (req, res) => {
     res.send("hello world");
+  });
+
+  app.get("/check-auth", (req, res) => {
+    const token = req.headers.authorization;
+
+    if (!token) {
+      res.status(401).send({ message: "No token provided" });
+      return;
+    }
+
+    try {
+      const decoded = verifyJwtToken(token);
+      if (decoded) {
+        res.status(200).send({ message: "Authenticated", user: decoded });
+      } else {
+        res.status(401).send({ message: "Invalid token" });
+      }
+    } catch (err) {
+      logger.warn("Token verification failed");
+      res.status(401).send({ message: "Token verification failed" });
+    }
   });
 
   app.get("/health", (req, res) => {
